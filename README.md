@@ -1,6 +1,6 @@
 # Research Project Compass
 
-A cross-platform desktop app for managing PhD projects, ideas, tasks, and related papers.
+A cross-platform desktop app for managing projects, ideas, tasks, and related papers.
 
 ## Current shape
 
