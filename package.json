@@ -1,0 +1,39 @@
+{
+  "name": "research-project-compass",
+  "version": "0.1.0",
+  "description": "Cross-platform desktop project manager for PhD research workflows.",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.research.projectcompass",
+    "productName": "Research Project Compass",
+    "files": [
+      "electron/**/*",
+      "index.html",
+      "style.css",
+      "app.js"
+    ],
+    "directories": {
+      "buildResources": "build"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    }
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  }
+}

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Research Project Compass</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="page-shell">
+    <aside class="sidebar">
+      <div class="brand-card">
+        <div class="brand-topbar">
+          <div>
+            <p class="eyebrow" data-i18n="brandEyebrow">PhD workflow demo</p>
+            <h1 data-i18n="brandTitle">Research Project Compass</h1>
+          </div>
+          <label class="language-switcher">
+            <span data-i18n="languageLabel">Language</span>
+            <select id="language-select" aria-label="Language">
+              <option value="en">English</option>
+              <option value="zh">中文</option>
+            </select>
+          </label>
+        </div>
+        <p class="brand-copy" data-i18n="brandCopy">
+          Keep big-picture projects, current progress, and fragile new ideas in one place.
+        </p>
+        <section class="sync-panel">
+          <div class="sync-panel-top">
+            <div>
+              <p class="sync-label" data-i18n="syncTitle">Sync</p>
+              <p class="sync-copy" id="sync-status">Desktop sync is available in the packaged app.</p>
+            </div>
+            <button id="sync-now-button" class="ghost-button compact-button" type="button" data-i18n="syncNowButton">Sync now</button>
+          </div>
+          <button id="choose-sync-folder-button" class="secondary-button sync-folder-button" type="button" data-i18n="chooseSyncFolderButton">Choose sync folder</button>
+        </section>
+      </div>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2 data-i18n="quickCaptureTitle">Quick Capture</h2>
+          <p data-i18n="quickCaptureCopy">Save a loose idea before it disappears.</p>
+        </div>
+        <form id="idea-form" class="stack-form">
+          <label data-i18n="ideaTitleLabel">
+            Idea title
+            <input type="text" id="idea-title" name="title" placeholder="Possible paper angle" data-i18n-placeholder="ideaTitlePlaceholder" required>
+          </label>
+          <label data-i18n="ideaDescriptionLabel">
+            Why it matters
+            <textarea id="idea-description" name="description" rows="4" placeholder="A short thought, hypothesis, or experimental direction" data-i18n-placeholder="ideaDescriptionPlaceholder"></textarea>
+          </label>
+          <label data-i18n="ideaProjectLabel">
+            Link to project
+            <select id="idea-project" name="projectId"></select>
+          </label>
+          <button type="submit" class="primary-button" data-i18n="saveIdeaButton">Save idea</button>
+        </form>
+      </section>
+
+      <section class="panel panel-soft">
+        <div class="panel-heading">
+          <h2 data-i18n="todayFocusTitle">Today’s Focus</h2>
+          <p id="focus-summary">Choose a project to see its next best step.</p>
+        </div>
+        <div id="focus-card" class="focus-card empty-state-card">
+          Pick a project from the dashboard.
+        </div>
+      </section>
+    </aside>
+
+    <main class="main-content">
+      <section class="hero">
+        <div>
+          <p class="eyebrow" data-i18n="overviewEyebrow">Overview</p>
+          <h2 data-i18n="overviewTitle">Your research portfolio at a glance</h2>
+          <p class="hero-copy" data-i18n="overviewCopy">
+            A demo workspace for tracking stage, deadlines, notes, and experimental momentum.
+          </p>
+        </div>
+        <button id="open-project-modal" class="secondary-button" data-i18n="addProjectButton">Add project</button>
+      </section>
+
+      <section class="stats-grid" id="stats-grid"></section>
+
+      <section class="content-grid">
+        <div class="panel">
+          <div class="panel-heading panel-heading-row">
+            <div>
+              <h2 data-i18n="projectsTitle">Projects</h2>
+              <p data-i18n="projectsCopy">From early concepts to submitted work.</p>
+            </div>
+            <label class="filter-label" data-i18n="filterLabel">
+              Filter
+              <select id="status-filter">
+                <option value="all" data-i18n="statusAll">All statuses</option>
+                <option value="planning" data-i18n="statusPlanning">Planning</option>
+                <option value="active" data-i18n="statusActive">Active</option>
+                <option value="waiting" data-i18n="statusWaiting">Waiting</option>
+                <option value="writing" data-i18n="statusWriting">Writing</option>
+                <option value="submitted" data-i18n="statusSubmitted">Submitted</option>
+                <option value="finished" data-i18n="statusFinished">Finished</option>
+              </select>
+            </label>
+          </div>
+          <div id="project-list" class="project-list"></div>
+        </div>
+
+        <div class="detail-column">
+          <section class="panel" id="project-detail-panel">
+            <div class="panel-heading">
+              <h2 data-i18n="projectDetailTitle">Project detail</h2>
+              <p data-i18n="projectDetailCopy">Select a project to inspect tasks, notes, and deadlines.</p>
+            </div>
+            <div id="project-detail" class="empty-state-card">
+              No project selected yet.
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <h2 data-i18n="ideaBankTitle">Idea Bank</h2>
+              <p data-i18n="ideaBankCopy">Small sparks that deserve a home.</p>
+            </div>
+            <div id="idea-list" class="idea-list"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="project-modal" class="modal">
+    <form id="project-form" class="modal-card">
+      <div class="panel-heading">
+        <h2 data-i18n="modalTitle">Add a project</h2>
+        <p data-i18n="modalCopy">Create a project with a clear next action and a deadline.</p>
+      </div>
+      <label data-i18n="projectTitleLabel">
+        Project title
+        <input type="text" name="title" placeholder="Dissertation Chapter 2" data-i18n-placeholder="projectTitlePlaceholder" required>
+      </label>
+      <label data-i18n="projectStatusLabel">
+        Status
+        <select name="status">
+          <option value="planning" data-i18n="statusPlanning">Planning</option>
+          <option value="active" data-i18n="statusActive">Active</option>
+          <option value="waiting" data-i18n="statusWaiting">Waiting</option>
+          <option value="writing" data-i18n="statusWriting">Writing</option>
+          <option value="submitted" data-i18n="statusSubmitted">Submitted</option>
+          <option value="finished" data-i18n="statusFinished">Finished</option>
+        </select>
+      </label>
+      <label data-i18n="deadlineLabel">
+        Deadline
+        <input type="date" name="deadline" required>
+      </label>
+      <label data-i18n="summaryLabel">
+        Summary
+        <textarea name="summary" rows="3" placeholder="What is this project trying to achieve?" data-i18n-placeholder="summaryPlaceholder" required></textarea>
+      </label>
+      <label data-i18n="nextActionLabel">
+        Next action
+        <input type="text" name="nextAction" placeholder="Revise related-work section" data-i18n-placeholder="nextActionPlaceholder">
+      </label>
+      <label data-i18n="progressLabel">
+        Progress %
+        <input type="range" name="progress" min="0" max="100" value="20">
+      </label>
+      <div class="modal-actions">
+        <button type="button" id="close-project-modal" class="ghost-button" data-i18n="cancelButton">Cancel</button>
+        <button type="submit" class="primary-button" data-i18n="createProjectButton">Create project</button>
+      </div>
+    </form>
+  </dialog>
+
+  <template id="project-card-template">
+    <article class="project-card">
+      <div class="project-card-top">
+        <div>
+          <span class="status-pill"></span>
+          <h3 class="project-title"></h3>
+        </div>
+        <button class="ghost-button compact-button project-open-button">Open</button>
+      </div>
+      <p class="project-summary"></p>
+      <div class="meta-row">
+        <span class="deadline-copy"></span>
+        <span class="progress-copy"></span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-bar"></div>
+      </div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
