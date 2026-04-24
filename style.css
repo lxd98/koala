@@ -24,7 +24,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: "Manrope", sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
   color: var(--text);
   background:
     radial-gradient(circle at top left, rgba(191, 91, 61, 0.18), transparent 25%),
@@ -98,7 +98,7 @@ select {
 .hero h2,
 .brand-card h1 {
   margin: 8px 0 10px;
-  font-family: "Fraunces", serif;
+  font-family: Arial, Helvetica, sans-serif;
   font-weight: 700;
   line-height: 1.05;
 }
@@ -287,7 +287,8 @@ textarea {
 .idea-card h3,
 .paper-card h5 {
   margin: 0;
-  font-family: "Fraunces", serif;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
 }
 
 .panel-heading-row {
@@ -550,6 +551,28 @@ textarea {
   margin-top: 10px;
 }
 
+.app-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 20;
+  max-width: 360px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: #2f4458;
+  color: #fff;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.app-toast.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 @media (max-width: 1100px) {
   .page-shell,
   .content-grid {
@@ -585,5 +608,12 @@ textarea {
 
   .stats-grid {
     grid-template-columns: 1fr;
+  }
+
+  .app-toast {
+    right: 16px;
+    bottom: 16px;
+    left: 16px;
+    max-width: none;
   }
 }

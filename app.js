@@ -3,6 +3,7 @@ const DEFAULT_LANGUAGE = "en";
 const supportedLanguages = ["en", "zh"];
 const PDF_DB_NAME = "research-project-compass-db";
 const PDF_STORE_NAME = "pdfs";
+const AUTO_SYNC_INTERVAL_MS = 30 * 60 * 1000;
 
 const translations = {
   en: {
@@ -19,6 +20,7 @@ const translations = {
     syncDesktopReady: "Sync folder: {path}",
     syncSuccess: "Synced at {time}.",
     syncFailed: "Sync failed. Your local data is still safe on this device.",
+    autoSyncSuccess: "Auto-synced at {time}.",
     quickCaptureTitle: "Quick Capture",
     quickCaptureCopy: "Save a loose idea before it disappears.",
     ideaTitleLabel: "Idea title",
@@ -55,6 +57,9 @@ const translations = {
     progressLabel: "Progress %",
     cancelButton: "Cancel",
     createProjectButton: "Create project",
+    projectCreatedToast: "Project added successfully.",
+    noDeadline: "No deadline",
+    noSummary: "No summary yet.",
     openProjectButton: "Open",
     papersTitle: "Related papers",
     papersCopy: "Store key papers for this project using a link or a local PDF.",
@@ -123,6 +128,7 @@ const translations = {
     syncDesktopReady: "同步文件夹：{path}",
     syncSuccess: "已在 {time} 完成同步。",
     syncFailed: "同步失败，但当前设备上的本地数据仍然安全。",
+    autoSyncSuccess: "已在 {time} 自动同步。",
     quickCaptureTitle: "快速记录",
     quickCaptureCopy: "在灵感消失前先把它记下来。",
     ideaTitleLabel: "想法标题",
@@ -159,6 +165,9 @@ const translations = {
     progressLabel: "进度 %",
     cancelButton: "取消",
     createProjectButton: "创建项目",
+    projectCreatedToast: "项目已成功添加。",
+    noDeadline: "无截止日期",
+    noSummary: "暂无摘要。",
     openProjectButton: "查看",
     papersTitle: "相关论文",
     papersCopy: "你可以为每个项目保存关键论文，来源可以是链接或本地 PDF。",
@@ -274,14 +283,17 @@ const elements = {
   languageSelect: document.querySelector("#language-select"),
   syncStatus: document.querySelector("#sync-status"),
   syncNowButton: document.querySelector("#sync-now-button"),
-  chooseSyncFolderButton: document.querySelector("#choose-sync-folder-button")
+  chooseSyncFolderButton: document.querySelector("#choose-sync-folder-button"),
+  appToast: document.querySelector("#app-toast")
 };
 
 const runtime = {
   isDesktop: Boolean(window.desktopAPI),
   syncDirectory: "",
   lastSyncedAt: "",
-  syncStatusKey: "syncBrowserHint"
+  syncStatusKey: "syncBrowserHint",
+  toastTimer: null,
+  autoSyncTimer: null
 };
 
 let state = normalizeState({
@@ -297,6 +309,7 @@ async function bootstrap() {
   Object.assign(runtime, loaded.runtime);
   render();
   attachEvents();
+  startAutoSync();
 }
 
 async function loadState() {
@@ -376,8 +389,14 @@ async function saveState(options = {}) {
 function attachEvents() {
   elements.ideaForm.addEventListener("submit", handleIdeaSubmit);
   elements.statusFilter.addEventListener("change", renderProjects);
-  elements.openProjectModal.addEventListener("click", () => elements.projectModal.showModal());
-  elements.closeProjectModal.addEventListener("click", () => elements.projectModal.close());
+  elements.openProjectModal.addEventListener("click", () => {
+    resetProjectForm();
+    elements.projectModal.showModal();
+  });
+  elements.closeProjectModal.addEventListener("click", () => {
+    resetProjectForm();
+    elements.projectModal.close();
+  });
   elements.projectForm.addEventListener("submit", handleProjectSubmit);
   elements.languageSelect.addEventListener("change", handleLanguageChange);
   elements.syncNowButton.addEventListener("click", handleSyncNow);
@@ -413,7 +432,10 @@ function renderStaticText() {
 function renderStats() {
   const totalProjects = state.projects.length;
   const activeProjects = state.projects.filter((project) => project.status === "active" || project.status === "writing").length;
-  const upcomingDeadlines = state.projects.filter((project) => daysUntil(project.deadline) <= 14).length;
+  const upcomingDeadlines = state.projects.filter((project) => {
+    const remainingDays = daysUntil(project.deadline);
+    return Number.isFinite(remainingDays) && remainingDays <= 14;
+  }).length;
   const totalIdeas = state.ideas.length;
 
   const stats = [
@@ -458,8 +480,10 @@ function renderProjects() {
     statusPill.classList.add(`status-${project.status}`);
 
     fragment.querySelector(".project-title").textContent = project.title;
-    fragment.querySelector(".project-summary").textContent = project.summary;
-    fragment.querySelector(".deadline-copy").textContent = `${t("dueLabel")} ${formatDate(project.deadline)}`;
+    fragment.querySelector(".project-summary").textContent = project.summary || t("noSummary");
+    fragment.querySelector(".deadline-copy").textContent = project.deadline
+      ? `${t("dueLabel")} ${formatDate(project.deadline)}`
+      : t("noDeadline");
     fragment.querySelector(".progress-copy").textContent = `${project.progress}% ${t("completeLabel")}`;
     fragment.querySelector(".progress-bar").style.width = `${project.progress}%`;
     fragment.querySelector(".project-open-button").textContent = t("openProjectButton");
@@ -496,11 +520,11 @@ function renderProjectDetail() {
           <h3>${project.title}</h3>
         </div>
         <div class="detail-meta">
-          <span>${t("detailDeadline")}: ${formatDate(project.deadline)}</span><br>
+          <span>${t("detailDeadline")}: ${project.deadline ? formatDate(project.deadline) : t("noDeadline")}</span><br>
           <span>${t("detailProgress")}: ${project.progress}%</span>
         </div>
       </div>
-      <p class="detail-summary">${project.summary}</p>
+      <p class="detail-summary">${project.summary || t("noSummary")}</p>
       <div class="progress-track">
         <div class="progress-bar" style="width: ${project.progress}%"></div>
       </div>
@@ -687,20 +711,21 @@ async function handleProjectSubmit(event) {
   event.preventDefault();
 
   const formData = new FormData(event.currentTarget);
+  const nextAction = String(formData.get("nextAction") || "").trim();
   const newProject = {
     id: crypto.randomUUID(),
-    title: formData.get("title"),
+    title: String(formData.get("title") || "").trim(),
     status: formData.get("status"),
-    deadline: formData.get("deadline"),
-    summary: formData.get("summary"),
-    nextAction: formData.get("nextAction"),
+    deadline: String(formData.get("deadline") || "").trim(),
+    summary: String(formData.get("summary") || "").trim(),
+    nextAction,
     progress: Number(formData.get("progress")),
     notes: "",
     papers: [],
     tasks: [
       {
         id: crypto.randomUUID(),
-        text: formData.get("nextAction") || t("defaultTaskText"),
+        text: nextAction || t("defaultTaskText"),
         done: false
       }
     ]
@@ -709,10 +734,20 @@ async function handleProjectSubmit(event) {
   state.projects.unshift(newProject);
   state.selectedProjectId = newProject.id;
 
-  await saveState();
-  event.currentTarget.reset();
+  resetProjectForm();
+  elements.statusFilter.value = "all";
   elements.projectModal.close();
   render();
+  showToast(t("projectCreatedToast"));
+
+  try {
+    await saveState();
+    renderStaticText();
+  } catch (error) {
+    console.warn("Project was added in the UI, but saving or syncing failed.", error);
+    runtime.syncStatusKey = "syncFailed";
+    renderStaticText();
+  }
 }
 
 async function handlePaperSubmit(event, projectId) {
@@ -867,6 +902,43 @@ async function handleSyncNow() {
   }
 }
 
+function startAutoSync() {
+  if (!runtime.isDesktop || runtime.autoSyncTimer) {
+    return;
+  }
+
+  runtime.autoSyncTimer = window.setInterval(async () => {
+    try {
+      const result = await window.desktopAPI.syncNow({ state });
+      state = normalizeState(result.state);
+      runtime.syncDirectory = result.syncDirectory || runtime.syncDirectory;
+      runtime.lastSyncedAt = result.lastSyncedAt || new Date().toISOString();
+      runtime.syncStatusKey = runtime.lastSyncedAt ? "autoSyncSuccess" : "syncDesktopReady";
+      render();
+    } catch (error) {
+      console.warn("Auto-sync failed.", error);
+      runtime.syncStatusKey = "syncFailed";
+      renderStaticText();
+    }
+  }, AUTO_SYNC_INTERVAL_MS);
+}
+
+function resetProjectForm() {
+  elements.projectForm.reset();
+  elements.projectForm.elements.status.value = "planning";
+  elements.projectForm.elements.progress.value = "20";
+}
+
+function showToast(message) {
+  elements.appToast.textContent = message;
+  elements.appToast.classList.add("visible");
+
+  window.clearTimeout(runtime.toastTimer);
+  runtime.toastTimer = window.setTimeout(() => {
+    elements.appToast.classList.remove("visible");
+  }, 2600);
+}
+
 function renderPaperList(project) {
   const papers = [...(project.papers || [])].sort((first, second) => Number(second.year) - Number(first.year));
 
@@ -993,6 +1065,10 @@ function getSyncStatusCopy() {
     return t("syncSuccess", { time: formatDateTime(runtime.lastSyncedAt) });
   }
 
+  if (runtime.syncStatusKey === "autoSyncSuccess" && runtime.lastSyncedAt) {
+    return t("autoSyncSuccess", { time: formatDateTime(runtime.lastSyncedAt) });
+  }
+
   if (runtime.syncStatusKey === "syncDesktopReady" && runtime.syncDirectory) {
     return t("syncDesktopReady", { path: runtime.syncDirectory });
   }
@@ -1024,6 +1100,10 @@ function getLocale() {
 }
 
 function formatDate(dateString) {
+  if (!dateString) {
+    return t("noDeadline");
+  }
+
   return new Intl.DateTimeFormat(getLocale(), {
     month: "short",
     day: "numeric",
@@ -1041,6 +1121,10 @@ function formatDateTime(dateString) {
 }
 
 function daysUntil(dateString) {
+  if (!dateString) {
+    return Number.POSITIVE_INFINITY;
+  }
+
   const today = new Date();
   const target = new Date(dateString);
   return Math.ceil((target - today) / (1000 * 60 * 60 * 24));

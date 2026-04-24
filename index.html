@@ -4,9 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Research Project Compass</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -157,11 +154,11 @@
       </label>
       <label data-i18n="deadlineLabel">
         Deadline
-        <input type="date" name="deadline" required>
+        <input type="date" name="deadline">
       </label>
       <label data-i18n="summaryLabel">
         Summary
-        <textarea name="summary" rows="3" placeholder="What is this project trying to achieve?" data-i18n-placeholder="summaryPlaceholder" required></textarea>
+        <textarea name="summary" rows="3" placeholder="What is this project trying to achieve?" data-i18n-placeholder="summaryPlaceholder"></textarea>
       </label>
       <label data-i18n="nextActionLabel">
         Next action
@@ -177,6 +174,8 @@
       </div>
     </form>
   </dialog>
+
+  <div id="app-toast" class="app-toast" role="status" aria-live="polite"></div>
 
   <template id="project-card-template">
     <article class="project-card">
